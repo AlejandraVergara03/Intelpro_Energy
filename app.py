@@ -63,6 +63,7 @@ def Sesion():
        now = datetime.now() # current date and time
        global date_time 
        date_time= now.strftime("%d/%m/%Y, %H:%M:%S")  
+
        return redirect('/home')#cambiar a donde se redirige
      else:
        
@@ -88,7 +89,10 @@ def home():
          cursor = con.cursor()  # Manipular la BD
                 # Prepara la sentencia SQL 
          cursor.row_factory= sqlite3.Row
-         cursor.execute("INSERT INTO loggin (user,act_time,time_out) VALUES (?,?,?)",[session["username"],date_time,date_time_out])
+         cursor.execute("SELECT empresa FROM users WHERE usuario= ? ",[session["username"]])
+         emp=cursor.fetchone();        
+         comp=emp["empresa"]                             
+         cursor.execute("INSERT INTO loggin (user,company,act_time,time_out) VALUES (?,?,?,?)",[session["username"],comp,date_time,date_time_out])
                 # Ejecuta la sentencia SQL
          con.commit()   
         return redirect('/')  
