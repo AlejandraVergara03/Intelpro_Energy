@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, flash, session, redirect, url
 from flask_login import LoginManager, login_user, logout_user, login_required
 import os
 import sqlite3
+
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlite3 import Error
 from form import Registro,Inicio, IniSesion,logout
 from datetime import timedelta, datetime
@@ -20,21 +22,29 @@ def Usuarios():
  if request.method=="POST":  
    name =  frm.nombre.data
    username = frm.username.data
-   password = frm.contrasena.data
+   password =frm.contrasena.data
    correo =frm.correo.data
    empresa =frm.empresa.data   
  
             # Conecta a la BD
    with sqlite3.connect("energy.db") as con:
-     cursor = con.cursor()  # Manipular la BD
+      cursor = con.cursor()  # Manipular la BD
                 # Prepara la sentencia SQL 
 
-     cursor.execute("INSERT INTO users (usuario,nombre, password,correo,empresa) VALUES(?,?,?,?,?)", [
+      cursor.execute("SELECT usuario FROM users WHERE usuario= ? ",[username])
+      con.commit()
+      comp=cursor.fetchone()
+      if comp:
+       flash("Este usuario ya existe, por favor intenta con otro")
+       return redirect('/Registro')
+     
+      else:   
+       cursor.execute("INSERT INTO users (usuario,nombre, password,correo,empresa) VALUES(?,?,?,?,?)", [
                             username,name, password, correo, empresa])
                 # Ejecuta la sentencia SQL
-     con.commit()
+      con.commit()
     
-   return redirect('/')#cambiar a donde se redirige
+      return redirect('/')#cambiar a donde se redirige
  else:
    return render_template('Registro.html',frm=frm)
 
@@ -43,6 +53,7 @@ def Usuarios():
 @app.route('/',methods=['POST','GET'])
 def Sesion():
  frm = IniSesion()
+  
  if request.method=="POST":  
    
    username = frm.username.data
@@ -55,9 +66,12 @@ def Sesion():
      cursor.row_factory= sqlite3.Row
      cursor.execute("SELECT usuario,password FROM users WHERE usuario= ? AND password = ?",[username,password])
      data=cursor.fetchone() 
-     if data:
+     
+     
+     
+     if data :
        session["username"]=data["usuario"]
-       session["password"]=data["password"]  
+       session["password"]=data["password"]
        session.permanent = True
        global now 
        now = datetime.now() # current date and time
@@ -68,7 +82,7 @@ def Sesion():
      else:
        
       flash("El nombre de usuario y la contraseña no concuerdan")
-      return render_template('inicio_sesion.html',frm=frm)
+      return redirect('/')
 
 
 
